@@ -133,7 +133,6 @@ class VdfSortition : public vrf_wrapper::VrfSortitionBase {
 
   LOG_OBJECTS_DEFINE;
 };
-
 }  // namespace taraxa::vdf_sortition
 
 #endif  // TARAXA_NODE_VDF_SORTITION_H
