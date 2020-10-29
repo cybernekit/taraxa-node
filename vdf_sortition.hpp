@@ -46,6 +46,7 @@ class VdfSortition : public vrf_wrapper::VrfSortitionBase {
   bool verifyVdf(level_t propose_block_level, std::string const& vdf_input);
 
   bytes rlp() const;
+  Json::Value getJson() const;
   bool operator==(VdfSortition const& other) const {
     return pk == other.pk && msg_ == other.msg_ && proof == other.proof &&
            output == other.output && vdf_sol_.first == other.vdf_sol_.first &&

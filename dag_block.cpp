@@ -133,7 +133,8 @@ Json::Value DagBlock::getJson() const {
   res["hash"] = dev::toJS(hash_);
   res["sender"] = dev::toJS(sender());
   res["timestamp"] = dev::toJS(timestamp_);
-  res["vdf"] = dev::toJS(dev::toHex(vdf_.rlp()));
+  res["vdf"] = vdf_.getJson();
+
   return res;
 }
 
