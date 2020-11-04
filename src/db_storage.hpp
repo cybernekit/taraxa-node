@@ -122,10 +122,7 @@ struct DbStorage {
   auto stateDbStoragePath() const { return state_db_path_; }
   static BatchPtr createWriteBatch();
   void commitWriteBatch(BatchPtr const& write_batch);
-  bool createSnapshot(uint64_t const& period);
-  void deleteSnapshot(uint64_t const& period);
-  void recoverToPeriod(uint64_t const& period);
-  void loadSnapshots();
+  void createSnapshot(uint64_t period);
 
   // DAG
   void saveDagBlock(DagBlock const& blk, BatchPtr write_batch = nullptr);

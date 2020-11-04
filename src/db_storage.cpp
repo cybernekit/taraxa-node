@@ -50,116 +50,15 @@ DbStorage::DbStorage(fs::path const& path,
   dag_edge_count_.store(getStatusField(StatusDbField::DagEdgeCount));
 }
 
-void DbStorage::loadSnapshots() {
-  // Find all the existing folders containing db and state_db snapshots
-  for (fs::directory_iterator itr(path_); itr != fs::directory_iterator();
-       ++itr) {
-    std::string fileName = itr->path().filename().string();
-    bool delete_dir = false;
-    uint64_t dir_period = 0;
-
-    try {
-      // Check for db or state_db prefix
-      if (boost::starts_with(fileName, db_dir) &&
-          fileName.size() > db_dir.size()) {
-        dir_period = stoi(fileName.substr(db_dir.size()));
-      } else if (boost::starts_with(fileName, state_db_dir) &&
-                 fileName.size() > state_db_dir.size()) {
-        dir_period = stoi(fileName.substr(state_db_dir.size()));
-      } else {
-        continue;
-      }
-    } catch (...) {
-      // This should happen if there is a incorrect formatted folder, just skip
-      // it
-      LOG(log_er_) << "Unexpected file: " << fileName;
-      continue;
-    }
-    LOG(log_dg_) << "Found snapshot: " << fileName;
-    snapshots_.insert(dir_period);
-  }
-}
-
-bool DbStorage::createSnapshot(uint64_t const& period) {
-  // Only creates snapshot each db_snapshot_each_n_pbft_block_ periods
-  if (db_snapshot_each_n_pbft_block_ > 0 &&
-      period % db_snapshot_each_n_pbft_block_ == 0) {
-    LOG(log_nf_) << "Creating DB snapshot on period: " << period;
-
-    // Create rocskd checkpoint/snapshot
-    rocksdb::Checkpoint* checkpoint;
-    auto status = rocksdb::Checkpoint::Create(db_, &checkpoint);
-    // Scope is to delete checkpoint object as soon as we don't need it anymore
-    {
-      unique_ptr<rocksdb::Checkpoint> realPtr =
-          unique_ptr<rocksdb::Checkpoint>(checkpoint);
-      checkStatus(status);
-      auto snapshot_path = db_path_;
-      snapshot_path += std::to_string(period);
-      status = checkpoint->CreateCheckpoint(snapshot_path.string());
-    }
-    checkStatus(status);
-    snapshots_.insert(period);
-
-    // Delete any snapshot over db_max_snapshots_
-    if (db_max_snapshots_ && snapshots_.size() > db_max_snapshots_) {
-      while (snapshots_.size() > db_max_snapshots_) {
-        auto snapshot = snapshots_.begin();
-        deleteSnapshot(*snapshot);
-        snapshots_.erase(snapshot);
-      }
-    }
-    return true;
-  }
-  return false;
-}
-
-void DbStorage::recoverToPeriod(uint64_t const& period) {
-  LOG(log_nf_) << "Revet to snapshot from period: " << period;
-
-  // Construct the snapshot folder names
-  auto period_path = db_path_;
-  auto period_state_path = state_db_path_;
-  period_path += to_string(period);
-  period_state_path += to_string(period);
-
-  if (fs::exists(period_path)) {
-    LOG(log_dg_) << "Deleting current db/state";
-    fs::remove_all(db_path_);
-    fs::remove_all(state_db_path_);
-    LOG(log_dg_) << "Reverting to period: " << period;
-    fs::rename(period_path, db_path_);
-    fs::rename(period_state_path, state_db_path_);
-    // Delete all the period snapshots that are after the snapshot we are
-    // reverting to
-    LOG(log_dg_) << "Deleting newer periods:";
-    for (auto snapshot = snapshots_.begin(); snapshot != snapshots_.end();) {
-      if (*snapshot > period) {
-        deleteSnapshot(*snapshot);
-        snapshots_.erase(snapshot++);
-      } else {
-        snapshot++;
-      }
-    }
-  } else {
-    LOG(log_er_) << "Period snapshot missing";
-  }
-}
-
-void DbStorage::deleteSnapshot(uint64_t const& period) {
-  LOG(log_nf_) << "Deleting " << period << "snapshot";
-
-  // Construct the snapshot folder names
-  auto period_path = db_path_;
-  auto period_state_path = state_db_path_;
-  period_path += to_string(period);
-  period_state_path += to_string(period);
-
-  // Delete both db and state_db folder
-  fs::remove_all(period_path);
-  LOG(log_dg_) << "Deleted folder: " << period_path;
-  fs::remove_all(period_state_path);
-  LOG(log_dg_) << "Deleted folder: " << period_path;
+void DbStorage::createSnapshot(uint64_t period) {
+  rocksdb::Checkpoint* checkpoint;
+  auto status = rocksdb::Checkpoint::Create(db_, &checkpoint);
+  checkStatus(status);
+  auto snapshot_path = path_;
+  snapshot_path += std::to_string(period);
+  status = checkpoint->CreateCheckpoint(snapshot_path.string());
+  delete checkpoint;
+  checkStatus(status);
 }
 
 DbStorage::~DbStorage() {

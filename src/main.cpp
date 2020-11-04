@@ -49,12 +49,39 @@ int main(int argc, const char* argv[]) {
     }
     FullNodeConfig cfg(conf_taraxa);
     if (destroy_db) {
-      fs::remove_all(cfg.db_path);
+      boost::filesystem::remove_all(cfg.db_path);
     }
     if (rebuild_network) {
-      fs::remove_all(cfg.net_file_path());
+      boost::filesystem::remove_all(cfg.net_file_path());
     }
-    cfg.test_params.db_revert_to_period = revert_to_period;
+    if (revert_to_period > 0) {
+      auto period_path = cfg.dbstorage_path();
+      period_path += to_string(revert_to_period);
+      if (boost::filesystem::exists(period_path)) {
+        cout << "Deleting current db/state" << endl;
+        boost::filesystem::remove_all(cfg.dbstorage_path());
+        cout << "Reverting to period: " << revert_to_period << endl;
+        boost::filesystem::rename(period_path, cfg.dbstorage_path());
+        cout << "Deleting newer periods:" << endl;
+        for (boost::filesystem::directory_iterator itr(cfg.db_path);
+             itr != boost::filesystem::directory_iterator(); ++itr) {
+          std::string fileName = itr->path().filename().string();
+          if (fileName.find("db") != fileName.npos) {
+            if (fileName.size() > 2) {
+              try {
+                uint64_t period = stoi(fileName.substr(2));
+                if (period > revert_to_period) {
+                  boost::filesystem::remove_all(itr->path());
+                }
+              } catch (...) {
+                cout << "Unexpected file in db folder: " << fileName << endl;
+              }
+            }
+          }
+          cout << "Deleted folder: " << fileName;
+        }
+      }
+    }
     FullNode::Handle node(cfg, true);
     cout << "Taraxa node started" << endl;
     // TODO graceful shutdown
