@@ -107,11 +107,12 @@ bool VdfSortition::verifyVrf() { return VrfSortitionBase::verify(msg_); }
 
 bool VdfSortition::verifyVdfSolution(std::string const& vdf_input) {
   // Verify VRF output
-  bool verified = verifyVrf();
+  bool verified = verifyVrf();  // Don't take time
   assert(verified);
 
   // Verify VDF solution
   const auto msg_bytes = vrf_wrapper::getRlpBytes(vdf_input);
+  auto t1 = getCurrentTimeMilliSeconds();
   VerifierWesolowski verifier(getLambda(), getDifficulty(), msg_bytes, N);
   if (!verifier(vdf_sol_)) {
     LOG(log_er_) << "VDF solution verification failed. VDF input " << vdf_input
@@ -120,7 +121,8 @@ bool VdfSortition::verifyVdfSolution(std::string const& vdf_input) {
     // std::cout << *this << std::endl;
     return false;
   }
-
+  auto t2 = getCurrentTimeMilliSeconds();
+  vdf_verification_time_ = t2 - t1;
   return true;
 }
 

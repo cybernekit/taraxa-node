@@ -67,7 +67,7 @@ struct VdfConfig {
   uint16_t difficulty_min = 0;
   uint16_t difficulty_max = 1;
   uint16_t difficulty_stale = 0;
-  uint16_t lambda_bound = 1500;  // lambda upper bound, should be constant
+  uint16_t lambda_bound = 100;  // lambda upper bound, should be constant
 };
 Json::Value enc_json(VdfConfig const& obj);
 void dec_json(Json::Value const& json, VdfConfig& obj);
@@ -110,6 +110,7 @@ class VdfSortition : public vrf_wrapper::VrfSortitionBase {
 
   Message getVrfMessage() const { return msg_; }
   auto getComputationTime() const { return vdf_computation_time_; }
+  auto getVerificationTime() const { return vdf_verification_time_; }
   uint16_t getDifficulty() const;
   uint16_t getLambda() const;
 
@@ -125,11 +126,12 @@ class VdfSortition : public vrf_wrapper::VrfSortitionBase {
   Message msg_;
   std::pair<bytes, bytes> vdf_sol_;
   unsigned long vdf_computation_time_ = 0;
+  unsigned long vdf_verification_time_ = 0;
   uint16_t difficulty_selection_ = 0;
   uint16_t difficulty_min_ = 0;
   uint16_t difficulty_max_ = 1;
   uint16_t difficulty_stale_ = 0;
-  uint16_t lambda_bound_ = 1500;  // lambda upper bound, should be constant
+  uint16_t lambda_bound_ = 100;  // lambda upper bound, should be constant
 
   LOG_OBJECTS_DEFINE;
 };
