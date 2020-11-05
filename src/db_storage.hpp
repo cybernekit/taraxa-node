@@ -99,7 +99,6 @@ struct DbStorage {
   uint32_t db_snapshot_each_n_pbft_block_ = 0;
   uint32_t db_max_snapshots_ = 0;
   uint32_t snapshots_counter = 0;
-  std::set<uint64_t> snapshots_;
   addr_t node_addr_;
 
   auto handle(Column const& col) const { return handles_[col.ordinal]; }
@@ -111,10 +110,9 @@ struct DbStorage {
   DbStorage& operator=(DbStorage const&) = delete;
 
   explicit DbStorage(fs::path const& base_path,
-                     uint32_t db_snapshot_each_n_pbft_block = 0,
-                     uint32_t db_max_snapshots = 0,
-                     uint32_t db_revert_to_period = 0,
-                     addr_t node_addr = addr_t());
+                     uint32_t db_snapshot_each_n_pbft_block,
+                     uint32_t db_max_snapshots, uint32_t db_revert_to_period,
+                     addr_t node_addr);
   ~DbStorage();
 
   auto const& path() const { return path_; }
@@ -122,7 +120,9 @@ struct DbStorage {
   auto stateDbStoragePath() const { return state_db_path_; }
   static BatchPtr createWriteBatch();
   void commitWriteBatch(BatchPtr const& write_batch);
-  void createSnapshot(uint64_t period);
+  bool createSnapshot(uint64_t const& period);
+  void deleteSnapshots(uint64_t const& period, bool const& after);
+  void recoverToPeriod(uint64_t const& period);
 
   // DAG
   void saveDagBlock(DagBlock const& blk, BatchPtr write_batch = nullptr);

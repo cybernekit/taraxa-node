@@ -18,12 +18,12 @@ DbStorage::DbStorage(fs::path const& path,
                      uint32_t db_max_snapshots, uint32_t db_revert_to_period,
                      addr_t node_addr)
     : path_(path),
+      db_path_(path / db_dir),
+      state_db_path_(path / state_db_dir),
       handles_(Columns::all.size()),
       db_snapshot_each_n_pbft_block_(db_snapshot_each_n_pbft_block),
       db_max_snapshots_(db_max_snapshots),
       node_addr_(node_addr) {
-  db_path_ = (path / db_dir);
-  state_db_path_ = (path / state_db_dir);
   fs::create_directories(db_path_);
   rocksdb::Options options;
   options.create_missing_column_families = true;
@@ -35,30 +35,84 @@ DbStorage::DbStorage(fs::path const& path,
                                                  ColumnFamilyOptions());
                  });
   LOG_OBJECTS_CREATE("DBS");
-
-  // Iterate over the db folders and populate snapshot set
-  loadSnapshots();
-
-  // Revert to period if needed
   if (db_revert_to_period) {
     recoverToPeriod(db_revert_to_period);
   }
-
   checkStatus(
       DB::Open(options, db_path_.string(), descriptors, &handles_, &db_));
   dag_blocks_count_.store(getStatusField(StatusDbField::DagBlkCount));
   dag_edge_count_.store(getStatusField(StatusDbField::DagEdgeCount));
 }
 
-void DbStorage::createSnapshot(uint64_t period) {
-  rocksdb::Checkpoint* checkpoint;
-  auto status = rocksdb::Checkpoint::Create(db_, &checkpoint);
-  checkStatus(status);
-  auto snapshot_path = path_;
-  snapshot_path += std::to_string(period);
-  status = checkpoint->CreateCheckpoint(snapshot_path.string());
-  delete checkpoint;
-  checkStatus(status);
+bool DbStorage::createSnapshot(uint64_t const& period) {
+  if (db_snapshot_each_n_pbft_block_ > 0 &&
+      period % db_snapshot_each_n_pbft_block_ == 0) {
+    rocksdb::Checkpoint* checkpoint;
+    auto status = rocksdb::Checkpoint::Create(db_, &checkpoint);
+    checkStatus(status);
+    auto snapshot_path = db_path_;
+    snapshot_path += std::to_string(period);
+    status = checkpoint->CreateCheckpoint(snapshot_path.string());
+    delete checkpoint;
+    checkStatus(status);
+    snapshots_counter++;
+    if (db_max_snapshots_ && snapshots_counter == db_max_snapshots_) {
+      snapshots_counter = 0;
+      deleteSnapshots(
+          period / db_snapshot_each_n_pbft_block_ - db_max_snapshots_, false);
+    }
+    return true;
+  }
+  return false;
+}
+
+void DbStorage::recoverToPeriod(uint64_t const& period) {
+  auto period_path = db_path_;
+  auto period_state_path = state_db_path_;
+  period_path += to_string(period);
+  period_state_path += to_string(period);
+  if (fs::exists(period_path)) {
+    cout << "Deleting current db/state" << endl;
+    fs::remove_all(db_path_);
+    fs::remove_all(state_db_path_);
+    cout << "Reverting to period: " << period << endl;
+    fs::rename(period_path, db_path_);
+    fs::rename(period_state_path, state_db_path_);
+    cout << "Deleting newer periods:" << endl;
+    deleteSnapshots(period, true);
+  } else {
+    cout << "Period snapshot missing" << endl;
+  }
+}
+
+void DbStorage::deleteSnapshots(uint64_t const& period, bool const& after) {
+  auto period_path = db_path_;
+  auto period_state_path = state_db_path_;
+  period_path += to_string(period);
+  period_state_path += to_string(period);
+  for (fs::directory_iterator itr(path_);
+       itr != fs::directory_iterator(); ++itr) {
+    std::string fileName = itr->path().filename().string();
+    bool db_dir_found = fileName.find("db") == 0;
+    bool state_db_dir_found = fileName.find("state_db") == 0;
+    bool delete_dir = false;
+    uint64_t dir_period = 0;
+    try {
+      if (fileName.find(db_dir) == 0) {
+        dir_period = stoi(fileName.substr(db_dir.size()));
+      } else if (fileName.find(state_db_dir) == 0) {
+        dir_period = stoi(fileName.substr(state_db_dir.size()));
+      } else {
+        continue;
+      }
+    } catch (...) {
+      cout << "Unexpected file: " << fileName << endl;
+    }
+    if ((after && dir_period > period) || (!after && dir_period < period)) {
+      fs::remove_all(itr->path());
+      cout << "Deleted folder: " << fileName << endl;
+    }
+  }
 }
 
 DbStorage::~DbStorage() {
