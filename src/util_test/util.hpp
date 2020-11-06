@@ -4,7 +4,6 @@
 #include <libdevcrypto/Common.h>
 
 #include <array>
-#include <filesystem>
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
@@ -24,10 +23,6 @@
 namespace taraxa::core_tests {
 using namespace std;
 using namespace std::chrono;
-using filesystem::is_regular_file;
-using filesystem::path;
-using filesystem::recursive_directory_iterator;
-using filesystem::remove_all;
 using dev::KeyPair;
 using dev::Secret;
 using filesystem::is_regular_file;
