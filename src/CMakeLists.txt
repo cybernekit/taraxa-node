@@ -138,8 +138,6 @@ set(SOURCES
         common/types.cpp
         )
 
-add_subdirectory(network/rpc)
-
 add_library(app_base STATIC ${SOURCES})
 target_include_directories(app_base PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -166,6 +164,9 @@ target_link_libraries(app_base
         ${jsoncpp_LIBRARIES}
         ${jsonrpccpp_SERVER_LIBRARIES}
         )
+
+add_subdirectory(network/graphql)
+add_subdirectory(network/rpc)
 
 # needed for golang runtime that comes together with taraxa-evm
 if (APPLE)  # if "APPLE" not sufficient, use if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
