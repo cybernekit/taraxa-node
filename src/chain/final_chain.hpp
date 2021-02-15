@@ -3,8 +3,9 @@
 #include <libethereum/ChainDBImpl.h>
 
 #include "aleth/database.hpp"
+#include "chain/state/state_api.hpp"
 #include "common/types.hpp"
-#include "state_api.hpp"
+#include "node/dag_stats.hpp"
 #include "storage/db_storage.hpp"
 #include "util/exit_stack.hpp"
 #include "util/range_view.hpp"
@@ -35,8 +36,11 @@ struct FinalChain : virtual ChainDB {
     TransactionReceipts const& receipts;
     state_api::StateTransitionResult const& state_transition_result;
   };
-  virtual AdvanceResult advance(DbStorage::BatchPtr batch, Address const& author, uint64_t timestamp,
-                                Transactions const& transactions) = 0;
+  virtual AdvanceResult advance(DbStorage::BatchPtr batch, const Address& author, uint64_t timestamp,
+                                const dev::eth::Transactions& transactions,
+                                const std::vector<DagStats::TransactionStats>& transactions_stats,
+                                const DagStats::BlocksStats& blocks_stats) = 0;
+
   virtual shared_ptr<BlockHeader> get_last_block() const = 0;
   virtual void advance_confirm() = 0;
   virtual void create_snapshot(uint64_t const& period) = 0;

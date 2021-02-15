@@ -67,6 +67,7 @@ set(SOURCES
         common/static_init.hpp
         dag/vdf_sortition.hpp
         chain/final_chain.hpp
+        chain/state/state_api.hpp
         consensus/pbft_config.hpp
         network/taraxa_capability.hpp
         util/exit_stack.hpp
@@ -76,6 +77,7 @@ set(SOURCES
         util/lazy.hpp
         config/config.hpp
         node/replay_protection_service.hpp
+        node/dag_stats.hpp
         common/types.hpp
         dag/dag_block.hpp
         network/rpc/Taraxa.h
@@ -95,7 +97,6 @@ set(SOURCES
         transaction_manager/transaction_queue.hpp
         logger/logger_config.hpp
         logger/log.hpp
-        chain/state_api.hpp
         dag/dag_block_manager.hpp
         consensus/pbft_manager.hpp
 
@@ -110,9 +111,11 @@ set(SOURCES
         aleth/database.cpp
         aleth/state_api.cpp
         node/executor.cpp
+        util/encoding_rlp.cpp
         network/taraxa_capability.cpp
         transaction_manager/transaction_manager.cpp
         dag/vdf_sortition.cpp
+        chain/state/state_api.cpp
         chain/chain_config.cpp
         chain/final_chain.cpp
         consensus/pbft_config.cpp
@@ -121,6 +124,7 @@ set(SOURCES
         util/util.cpp
         consensus/pbft_chain.cpp
         node/replay_protection_service.cpp
+        node/dag_stats.cpp
         config/config.cpp
         dag/dag_block.cpp
         node/full_node.cpp
@@ -131,14 +135,12 @@ set(SOURCES
         network/rpc/Net.cpp
         network/rpc/RpcServer.cpp
         transaction_manager/transaction_order_manager.cpp
-        chain/state_api.cpp
         transaction_manager/transaction_queue.cpp
         dag/dag.cpp
         logger/logger_config.cpp
         logger/log.cpp
         common/types.cpp
-        dag/dag_block_manager.cpp
-        )
+        dag/dag_block_manager.cpp)
 
 add_subdirectory(network/rpc)
 

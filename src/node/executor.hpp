@@ -30,7 +30,12 @@ class Executor {
   std::atomic<bool> stopped_ = true;
   std::unique_ptr<std::thread> exec_worker_;
 
-  dev::eth::Transactions transactions_tmp_buf_;
+  // Containers used in executePbftBlocks_() as tmp data holders
+  // optimization - they do not need to be always allocated from scratch
+  std::vector<dev::eth::Transaction> txs_tmp_buf_;
+  std::vector<DagStats::TransactionStats> txs_stats_tmp_buf_;
+  DagStats dag_stats_tmp_buf_;
+
   std::atomic<uint64_t> num_executed_dag_blk_ = 0;
   std::atomic<uint64_t> num_executed_trx_ = 0;
 
@@ -52,6 +57,7 @@ class Executor {
   void tick();
   void execute_(PbftBlock const& blk);
   std::shared_ptr<PbftBlock> load_pbft_blk(uint64_t pbft_period);
+  void clearTmpContainers();
 };
 
 }  // namespace taraxa

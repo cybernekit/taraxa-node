@@ -80,32 +80,42 @@ DagBlock::DagBlock(dev::RLP const &rlp) {
   if (!rlp.isList()) {
     throw std::invalid_argument("transaction RLP must be a list");
   }
-  uint field_n = 0;
+
+  // rlp_field_idx must start from 0, 0  is equivalent to RlpField::PIVOT
+  uint rlp_field_idx = 0;
   for (auto const &el : rlp) {
-    if (field_n == 0) {
-      pivot_ = el.toHash<blk_hash_t>();
-    } else if (field_n == 1) {
-      level_ = el.toInt<level_t>();
-    } else if (field_n == 2) {
-      timestamp_ = el.toInt<uint64_t>();
-    } else if (field_n == 3) {
-      vdf_ = vdf_sortition::VdfSortition(cached_sender_, el.toBytes());
-    } else if (field_n == 4) {
-      tips_ = el.toVector<trx_hash_t>();
-    } else if (field_n == 5) {
-      trxs_ = el.toVector<trx_hash_t>();
-    } else if (field_n == 6) {
-      sig_ = el.toHash<sig_t>();
-    } else {
-      BOOST_THROW_EXCEPTION(std::runtime_error("too many rlp fields for dag block"));
+    switch (rlp_field_idx) {
+      case RlpField::PIVOT:
+        pivot_ = el.toHash<blk_hash_t>();
+        break;
+      case RlpField::LEVEL:
+        level_ = el.toInt<level_t>();
+        break;
+      case RlpField::TIMESTAMP:
+        timestamp_ = el.toInt<uint64_t>();
+        break;
+      case RlpField::VDF:
+        vdf_ = vdf_sortition::VdfSortition(cached_sender_, el.toBytes());
+        break;
+      case RlpField::TIPS:
+        tips_ = el.toVector<trx_hash_t>();
+        break;
+      case RlpField::TRANSACTIONS:
+        trxs_ = el.toVector<trx_hash_t>();
+        break;
+      case RlpField::SIGNATURE:
+        sig_ = el.toHash<sig_t>();
+        break;
+      default:
+        BOOST_THROW_EXCEPTION(std::runtime_error("too many rlp fields for dag block"));
     }
-    ++field_n;
+    ++rlp_field_idx;
   }
   updateHash();
 }
 
 std::vector<trx_hash_t> DagBlock::extract_transactions_from_rlp(RLP const &rlp) {
-  return rlp[5].toVector<trx_hash_t>();
+  return rlp[RlpField::TRANSACTIONS].toVector<trx_hash_t>();
 }
 
 bool DagBlock::isValid() const {

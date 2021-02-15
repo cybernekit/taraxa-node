@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "common/types.hpp"
+#include "node/dag_stats.hpp"
 #include "storage/db_storage.hpp"
 #include "util/encoding_rlp.hpp"
 #include "util/range_view.hpp"
@@ -35,8 +36,9 @@ struct ErrFutureBlock : TaraxaEVMError {
 };
 
 struct ExecutionOptions {
-  bool disable_nonce_check = 0;
-  bool disable_gas_fee = 0;
+  bool disable_nonce_check = false;
+  bool disable_gas_fee = false;
+  bool disable_dag_stats_rewards = false;
 };
 void enc_rlp(RLPStream&, ExecutionOptions const&);
 Json::Value enc_json(ExecutionOptions const& obj);
@@ -79,7 +81,7 @@ using DPOSTransfers = unordered_map<addr_t, DPOSTransfer>;
 
 struct ChainConfig {
   ETHChainConfig eth_chain_config;
-  bool disable_block_rewards = 0;
+  bool disable_block_rewards = false;
   ExecutionOptions execution_options;
   BalanceMap genesis_balances;
   optional<DPOSConfig> dpos;
@@ -242,8 +244,9 @@ class StateAPI {
   ExecutionResult dry_run_transaction(BlockNumber blk_num, EVMBlock const& blk, EVMTransaction const& trx,
                                       optional<ExecutionOptions> const& opts = nullopt) const;
   StateDescriptor get_last_committed_state_descriptor() const;
-  StateTransitionResult const& transition_state(EVMBlock const& block,
-                                                RangeView<EVMTransaction> const& transactions,  //
+  StateTransitionResult const& transition_state(EVMBlock const& block, const RangeView<EVMTransaction>& transactions,
+                                                const RangeView<DagStats::TransactionStats>& transactions_stats = {},
+                                                const DagStats::BlocksStats& blocks_stats = {},
                                                 RangeView<UncleBlock> const& uncles = {});
   void transition_state_commit();
   void create_snapshot(uint64_t const& period);

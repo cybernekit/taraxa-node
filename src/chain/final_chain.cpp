@@ -61,8 +61,7 @@ struct FinalChainImpl : virtual FinalChain, virtual ChainDBImpl {
             last_blk->timestamp(),
             last_blk->difficulty(),
         },
-        map_transactions(ChainDBImpl::transactions(blk_n)),  //
-        {});
+        map_transactions(ChainDBImpl::transactions(blk_n)));
     assert(res.StateRoot == last_blk->stateRoot());
     state_api.transition_state_commit();
   }
@@ -90,7 +89,9 @@ struct FinalChainImpl : virtual FinalChain, virtual ChainDBImpl {
   }
 
   AdvanceResult advance(DbStorage::BatchPtr batch, Address const& author, uint64_t timestamp,
-                        Transactions const& transactions) override {
+                        const dev::eth::Transactions& transactions,
+                        const std::vector<DagStats::TransactionStats>& transactions_stats,
+                        const DagStats::BlocksStats& blocks_stats) override {
     constexpr auto gas_limit = std::numeric_limits<uint64_t>::max();
     auto const& state_transition_result = state_api.transition_state(
         {
@@ -99,11 +100,12 @@ struct FinalChainImpl : virtual FinalChain, virtual ChainDBImpl {
             timestamp,
             0,
         },
-        map_transactions(transactions),  //
-        {});
+        map_transactions(transactions), {transactions_stats}, blocks_stats);
+
     receipts_buf.clear();
     receipts_buf.reserve(state_transition_result.ExecutionResults.size());
     gas_t cumulative_gas_used = 0;
+
     for (auto const& r : state_transition_result.ExecutionResults) {
       LogEntries logs;
       logs.reserve(r.Logs.size());
@@ -114,6 +116,7 @@ struct FinalChainImpl : virtual FinalChain, virtual ChainDBImpl {
                                 move(logs), r.NewContractAddr);
     }
     auto exit_stack = append_block_prepare(batch);
+
     return {
         append_block(author, timestamp, gas_limit, state_transition_result.StateRoot, transactions, receipts_buf),
         receipts_buf,

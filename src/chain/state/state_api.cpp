@@ -11,6 +11,7 @@
 static_assert(sizeof(char) == sizeof(uint8_t));
 
 namespace taraxa::state_api {
+
 using util::dec_rlp;
 using util::enc_rlp;
 
@@ -164,13 +165,16 @@ StateDescriptor StateAPI::get_last_committed_state_descriptor() const {
   return ret;
 }
 
-StateTransitionResult const& StateAPI::transition_state(EVMBlock const& block,  //
-                                                        RangeView<EVMTransaction> const& transactions,
-                                                        RangeView<UncleBlock> const& uncles) {
+StateTransitionResult const& StateAPI::transition_state(EVMBlock const& block,  // PBFT blocks
+                                                        const RangeView<EVMTransaction>& transactions,
+                                                        const RangeView<DagStats::TransactionStats>& transactions_stats,
+                                                        const DagStats::BlocksStats& blocks_stats,
+                                                        const RangeView<UncleBlock>& uncles) {
   result_buf_transition_state.ExecutionResults.clear();
   rlp_enc_transition_state.clear();
   c_method_args_rlp<StateTransitionResult, from_rlp, taraxa_evm_state_api_transition_state>(
-      this_c, rlp_enc_transition_state, result_buf_transition_state, block, transactions, uncles);
+      this_c, rlp_enc_transition_state, result_buf_transition_state, block, transactions, transactions_stats,
+      blocks_stats, uncles);
   return result_buf_transition_state;
 }
 
@@ -226,7 +230,7 @@ StateAPI::DPOSTransactionPrototype::DPOSTransactionPrototype(DPOSTransfers const
 }
 
 void enc_rlp(RLPStream& rlp, ExecutionOptions const& obj) {
-  enc_rlp_tuple(rlp, obj.disable_nonce_check, obj.disable_gas_fee);
+  enc_rlp_tuple(rlp, obj.disable_nonce_check, obj.disable_gas_fee, obj.disable_dag_stats_rewards);
 }
 
 void enc_rlp(RLPStream& rlp, ETHChainConfig const& obj) {
@@ -301,12 +305,14 @@ Json::Value enc_json(ExecutionOptions const& obj) {
   Json::Value json(Json::objectValue);
   json["disable_nonce_check"] = obj.disable_nonce_check;
   json["disable_gas_fee"] = obj.disable_gas_fee;
+  json["disable_dag_stats_rewards"] = obj.disable_dag_stats_rewards;
   return json;
 }
 
 void dec_json(Json::Value const& json, ExecutionOptions& obj) {
   obj.disable_nonce_check = json["disable_nonce_check"].asBool();
   obj.disable_gas_fee = json["disable_gas_fee"].asBool();
+  obj.disable_dag_stats_rewards = json["disable_dag_stats_rewards"].asBool();
 }
 
 Json::Value enc_json(ETHChainConfig const& obj) {

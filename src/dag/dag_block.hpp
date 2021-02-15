@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bitset>
+
 #include "vdf_sortition.hpp"
 
 namespace taraxa {
@@ -9,15 +11,23 @@ using VdfSortition = vdf_sortition::VdfSortition;
 
 // Note: Need to sign first then sender() and hash() is available
 class DagBlock {
-  blk_hash_t pivot_;
-  level_t level_ = 0;
-  vec_blk_t tips_;
-  vec_trx_t trxs_;  // transactions
-  sig_t sig_;
-  blk_hash_t hash_;
-  uint64_t timestamp_ = 0;
-  vdf_sortition::VdfSortition vdf_;
-  mutable addr_t cached_sender_;  // block creater
+ public:
+  /**
+   * @brief list of Dag block RLP fields
+   *
+   * @note internal values cannot be changed and PIVOT must have value 0 as that is rlp fixed fields structure
+   */
+  enum RlpField : uint8_t {
+    PIVOT = 0,
+    LEVEL,
+    TIMESTAMP,
+    VDF,
+    TIPS,
+    TRANSACTIONS,
+    SIGNATURE,
+    UPDATE_HASH,
+    COUNT  // Must be last -> used as rlp fields counter
+  };
 
  public:
   DagBlock() = default;
@@ -30,6 +40,12 @@ class DagBlock {
   explicit DagBlock(dev::RLP const &_rlp);
   explicit DagBlock(dev::bytes const &_rlp) : DagBlock(dev::RLP(_rlp)) {}
 
+  /**
+   * @brief Extract transactions from rlp
+   *
+   * @param rlp
+   * @return std::vector<trx_hash_t>
+   */
   static std::vector<trx_hash_t> extract_transactions_from_rlp(dev::RLP const &rlp);
 
   friend std::ostream &operator<<(std::ostream &str, DagBlock const &u) {
@@ -73,6 +89,16 @@ class DagBlock {
   bytes rlp(bool include_sig) const;
 
  private:
+  blk_hash_t pivot_;
+  level_t level_ = 0;
+  vec_blk_t tips_;
+  vec_trx_t trxs_;  // transactions
+  sig_t sig_;
+  blk_hash_t hash_;
+  uint64_t timestamp_ = 0;
+  vdf_sortition::VdfSortition vdf_;
+  mutable addr_t cached_sender_;  // block creator
+
   void streamRLP(dev::RLPStream &s, bool include_sig) const;
   blk_hash_t sha3(bool include_sig) const;
 };

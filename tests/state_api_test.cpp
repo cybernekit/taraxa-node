@@ -1,4 +1,4 @@
-#include "chain/state_api.hpp"
+#include "chain/state/state_api.hpp"
 
 #include <libdevcore/CommonJS.h>
 
@@ -26,6 +26,7 @@ static auto const base_taraxa_chain_cfg = [] {
   ret.disable_block_rewards = true;
   ret.execution_options.disable_nonce_check = true;
   ret.execution_options.disable_gas_fee = true;
+  ret.execution_options.disable_dag_stats_rewards = true;
   ret.eth_chain_config.dao_fork_block = BlockNumberNIL;
   return ret;
 }();
@@ -56,6 +57,8 @@ TEST_F(StateAPITest, eth_mainnet_smoke) {
                                         "taraxa" / "data" / "eth_mainnet_blocks_0_300000.rlp");
 
   ChainConfig chain_config;
+  chain_config.execution_options.disable_dag_stats_rewards = true;
+
   auto& eth_cfg = chain_config.eth_chain_config;
   eth_cfg.homestead_block = 1150000;
   eth_cfg.dao_fork_block = 1920000;
@@ -89,7 +92,8 @@ TEST_F(StateAPITest, eth_mainnet_smoke) {
       cout << "progress: " << (progress_pct = n) << "%" << endl;
     }
     auto const& test_block = test_blocks[blk_num];
-    auto const& result = SUT.transition_state(test_block.evm_block, test_block.Transactions, test_block.UncleBlocks);
+    auto const& result =
+        SUT.transition_state(test_block.evm_block, test_block.Transactions, {}, {}, test_block.UncleBlocks);
     ASSERT_EQ(result.StateRoot, test_block.StateRoot);
     SUT.transition_state_commit();
   }

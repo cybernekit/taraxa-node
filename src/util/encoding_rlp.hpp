@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "node/dag_stats.hpp"
 #include "range_view.hpp"
 #include "util.hpp"
 
@@ -43,6 +44,11 @@ template <typename Param>
 void enc_rlp(RLPStream& rlp, Param* target) {
   rlp.append(bigint(reinterpret_cast<uintptr_t>(target)));
 }
+
+// TODO: unable to declare this method elsewhere and make it work...
+// void enc_rlp(RLPStream& rlp, const dev::eth::Transaction& obj);
+void enc_rlp(dev::RLPStream& rlp, const DagStats::TransactionStats& obj);
+void enc_rlp(dev::RLPStream& rlp, const DagStats::BlocksStats& obj);
 
 template <typename Param>
 void enc_rlp(RLPStream& rlp, RangeView<Param> const& target) {
