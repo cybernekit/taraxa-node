@@ -10,11 +10,11 @@ namespace taraxa::util::encoding_rlp {
 //}
 
 void enc_rlp(dev::RLPStream& rlp, const DagStats::TransactionStats& obj) {
-  enc_rlp_tuple(rlp, obj.miner_, obj.uncle_miners_);
+  enc_rlp_tuple(rlp, obj.proposer_, obj.uncle_proposers_);
 }
 
 void enc_rlp(dev::RLPStream& rlp, const DagStats::BlocksStats& obj) {
-  enc_rlp_tuple(rlp, obj.miners_blocks_count_, obj.total_blocks_count_);
+  enc_rlp_tuple(rlp, obj.proposers_blocks_count_, obj.total_blocks_count_);
 }
 
 }  // namespace taraxa::util::encoding_rlp

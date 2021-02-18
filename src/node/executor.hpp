@@ -32,8 +32,8 @@ class Executor {
 
   // Containers used in executePbftBlocks_() as tmp data holders
   // optimization - they do not need to be always allocated from scratch
-  std::vector<dev::eth::Transaction> txs_tmp_buf_;
-  std::vector<DagStats::TransactionStats> txs_stats_tmp_buf_;
+  std::vector<dev::eth::Transaction> trxs_tmp_buf_;
+  std::vector<DagStats::TransactionStats> trxs_stats_tmp_buf_;
   DagStats dag_stats_tmp_buf_;
 
   std::atomic<uint64_t> num_executed_dag_blk_ = 0;

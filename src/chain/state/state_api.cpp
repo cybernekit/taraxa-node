@@ -165,7 +165,7 @@ StateDescriptor StateAPI::get_last_committed_state_descriptor() const {
   return ret;
 }
 
-StateTransitionResult const& StateAPI::transition_state(EVMBlock const& block,  // PBFT blocks
+StateTransitionResult const& StateAPI::transition_state(EVMBlock const& block,  // PBFT block
                                                         const RangeView<EVMTransaction>& transactions,
                                                         const RangeView<DagStats::TransactionStats>& transactions_stats,
                                                         const DagStats::BlocksStats& blocks_stats,
